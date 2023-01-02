@@ -1,11 +1,24 @@
-const db = require('../DbConnection/DbConnection.js') ;                           // require de la connection a l db
-let express = require('express');                                                 // appel du module 'express'
+const db = require('../DbConnection/DbConnection.js') ;                             // require de la connection a l db
+const bcrypt = require('bcrypt');                                                   // require de la méthode de cryptage
+
+const hashage = async (password) => {                                               // définition de quel param on hash
+    return await bcrypt.hash(password, 10)
+}
+
+const hashVerify = async (password) => {
+    return await bcrypt.compare(password)
+    // compareSync(data, encrypted)
+    // data - [REQUIRED] - data to compare.
+    //     encrypted - [REQUIRED] - data to be compared to.
+    // if(match) {
+    //     //login
+    // }
+}
 
 
 class User {
-
-    listController(req, res){
-        db.query('SELECT * FROM users',[], function (err,data){
+    listUser(req, res){
+        db.query('SELECT * FROM users',[], (err,data)=>{
             if (err) {
                 throw err;
             }
@@ -14,30 +27,28 @@ class User {
         })
     }
 
-    singleController(req,res){
-        db.query('SELECT * FROM users WHERE id = ?',[req.params.id], function (err,data){
+    singleUser(req,res){
+        db.query('SELECT * FROM users WHERE id = ?',[req.params.id], (err,data)=>{
             if (err) {
                 console.log(err)
                 throw err;
             }
             // console.log(req.params.id)
-            console.log(data)
+            console.log(data);
             res.send(data);                       // message renvoyé si la requete renvoyée
         })
     }
 
-    updateController(req,res){
-        db.query('UPDATE users SET ? WHERE id = ? ',[req.body, req.params.id] , function (err,data){
-            if (err){
-                console.log(err)
-                throw err;
-            }
+    updateUser(req,res){
+        req.body.updated_at = new Date();
+        db.query('UPDATE users SET ? WHERE id = ? ',[req.body, req.params.id] , function (err){
+            if (err){ throw err;}
             console.log(req.body)
             res.send(req.body) ;
         })
     }
 
-    deleteUserController(req,res){
+    deleteUser(req,res){
         db.query('DELETE FROM users WHERE id = ?', [req.params.id], function (err,data){
             if (err){
                 console.log(err)
@@ -48,24 +59,37 @@ class User {
         })
     }
 
-    loginController(req,res){
-       db.query('SELECT * FROM users WHERE email = ? AND password = ?', [req.body.email, req.body.password], function (err,data){
-            if (err){
-                console.log(err)
-                throw err;
-            }
-            console.log(data, "l\'utilisateur est bien connecté")
-           res.send(data,"l\'utilisateur est bien connecté")
-       })
+    async loginUser(req,res){
+        let password = await hashage(req.body.password);
+        let result = db.query('SELECT * FROM users WHERE email = ? AND password = ?', [req.body.email, req.body.password])
+            console.log(req.body.password, password)
+
+            // const match = await bcrypt.compare(password, user.passwordHash);
+
+            // if ('email' !== req.body.email && 'password'!== req.body.password ){
+            //     console.log("l\'utilisateur n\'est pas connecté")
+            //     // return res.status(200).json({message:"l\'utilisateur n\'est pas connecté"})
+            // }else{
+            //     if (db.email = [req.body.email] , db.password = [req.body.password]) {
+            //         console.log( "l\'utilisateur est bien connecté")
+            //         res.send( "l\'utilisateur est bien connecté")
+            //     }
+            // }
+            // console.log("l\'utilisateur est bien connecté")
+            // return res.status(200).json({message:"l\'utilisateur est bien connecté"})
     }
 
-    register(req,res){
-        req.body.created_at = new Date();
-        req.body.updated_at = new Date();
-        db.query("INSERT INTO users SET ? ", [req.body], function(err,data){
-            console.log( req.body)
-            res.send(req.body)
-        })
-    }
+     async registerUser(req,res,next) {
+        let password = await hashage(req.body.password);
+        let {email, firstname, lastname, groupe_id} = req.body
+
+        if(!email || !password || !firstname || !lastname || !groupe_id){
+            res.status(400).json({message: 'Erreur, l\'utilisateur n\'a pu être enregistré'})
+            next()
+        }else{
+            db.query("INSERT INTO users SET ? ", {email, password , firstname, lastname, groupe_id})
+            return res.status(200).json({message: 'l\'utilisateur à bien été enregistré'})
+        }
+     }
 }
 module.exports = User;

@@ -4,7 +4,7 @@ let express = require('express');                                               
 
 class Groupes {
 
-    listController(req,res){
+    listGroupe(req,res){
         db.query('SELECT * FROM groupe', [],function (err,data){
             if (err) {
                 throw err;
@@ -14,7 +14,17 @@ class Groupes {
         })
     }
 
-    singleController(req,res){
+    listGroupeByName(req,res){
+        db.query('SELECT `name` FROM groupe', [],function (err,data){
+            if (err) {
+                throw err;
+            }
+            console.log(data)
+            res.send(data)
+        })
+    }
+
+    singleGroupe(req,res){
         db.query('SELECT * FROM groupe WHERE id = ?',[req.params.id], function (err,data){
             if (err) {
                 console.log(err)
@@ -25,7 +35,7 @@ class Groupes {
         })
     }
 
-    updateController(req,res){
+    updateGroupe(req,res){
         db.query('UPDATE groupe SET ? WHERE id = ? ',[req.body, req.params.id] , function (err,data){
             if (err){
                 console.log(err)
@@ -35,7 +45,7 @@ class Groupes {
             res.send(req.body) ;
         })
     }
-    deleteGroupeController(req){
+    deleteGroupe(req){
         db.query('DELETE FROM groupe WHERE id = ?', [req.params.id], function (err,data){
             if (err){
                 console.log(err)
@@ -46,7 +56,7 @@ class Groupes {
         })
     }
 
-    register(req,res){
+    registerGroupe(req,res){
         req.body.created_at = new Date();
         req.body.updated_at = new Date();
         db.query("INSERT INTO groupe SET ? ", [req.body], function(err,data){
